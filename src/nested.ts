@@ -1,6 +1,6 @@
-import { Answer } from "./interfaces/answer";
 import { Question, QuestionType } from "./interfaces/question";
 import { makeBlankQuestion, duplicateQuestion } from "./objects";
+import { Answer } from "./interfaces/answer";
 
 /**
  * Consumes an array of questions and returns a new array with only the questions
