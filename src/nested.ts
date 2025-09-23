@@ -1,4 +1,5 @@
-import { Answer } from "../interfaces/answer";
+import { queries } from "@testing-library/dom";
+import { Answer } from "./interfaces/answer";
 import { Question, QuestionType } from "./interfaces/question";
 import { makeBlankQuestion, duplicateQuestion } from "./objects";
 
@@ -41,7 +42,7 @@ export function findQuestion(
  * with the given `id`.
  */
 export function removeQuestion(questions: Question[], id: number): Question[] {
-    return questions.filter((question) => question.id != id);
+    return questions.filter((question) => question.id !== id);
 }
 
 /***
@@ -56,7 +57,7 @@ export function getNames(questions: Question[]): string[] {
  * Consumes an array of questions and returns the sum total of all their points added together.
  */
 export function sumPoints(questions: Question[]): number {
-    return questions.reduce((total, question) => total + question.points, 0);
+    return questions.reduce((sum, question) => sum + question.points, 0);
 }
 
 /***
@@ -65,7 +66,7 @@ export function sumPoints(questions: Question[]): number {
 export function sumPublishedPoints(questions: Question[]): number {
     return questions
         .filter((question) => question.published)
-        .reduce((total, question) => total + question.points, 0);
+        .reduce((sum, questions) => sum + questions.points, 0);
 }
 
 /***
@@ -86,13 +87,14 @@ id,name,options,points,published
  * Check the unit tests for more examples!
  */
 export function toCSV(questions: Question[]): string {
-    let result: string = "id,name,options,points,published\n";
-    for (const question of questions) {
-        result += `${question.id},${question.name},${question.options.length},${question.points},${question.published}\n`;
-    }
-    result = result.slice(0, -1);
-
-    return result;
+    let result = "id,name,options,points,published\n";
+    let infor = questions
+        .map(
+            (question) =>
+                `${question.id},${question.name},${question.options.length},${question.points},${question.published}`,
+        )
+        .join("\n");
+    return (result += infor);
 }
 
 /**
@@ -101,16 +103,22 @@ export function toCSV(questions: Question[]): string {
  * making the `text` an empty string, and using false for both `submitted` and `correct`.
  */
 export function makeAnswers(questions: Question[]): Answer[] {
-    const answers: Answer[] = [];
-    for (const question of questions) {
-        const answer: Answer = {
-            questionId: question.id,
-            text: "",
-            submitted: false,
-            correct: false,
-        };
-        answers.push(answer);
-    }
+    let answers = questions.map((question) => ({
+        questionId: question.id,
+        text: "",
+        submitted: false,
+        correct: false,
+    }));
+
+    // let answers: Answer[] = [];
+    // for (let question of questions) {
+    //     answers.push({
+    //         questionId: question.id,
+    //         text: "",
+    //         submitted: false,
+    //         correct: false,
+    //     });
+    // }
     return answers;
 }
 /***
@@ -153,13 +161,9 @@ export function renameQuestionById(
     targetId: number,
     newName: string,
 ): Question[] {
-    return questions.map((question) => {
-        if (question.id === targetId) {
-            return { ...question, name: newName };
-        } else {
-            return question;
-        }
-    });
+    return questions.map((question) =>
+        question.id === targetId ? { ...question, name: newName } : question,
+    );
 }
 
 /***
@@ -174,17 +178,18 @@ export function changeQuestionTypeById(
     targetId: number,
     newQuestionType: QuestionType,
 ): Question[] {
-    return questions.map((question) => {
-        if (question.id === targetId) {
-            if (newQuestionType !== "multiple_choice_question") {
-                return { ...question, type: newQuestionType, options: [] };
-            } else {
-                return { ...question, type: newQuestionType };
+    return questions.map((question) =>
+        question.id === targetId ?
+            {
+                ...question,
+                type: newQuestionType,
+                options:
+                    newQuestionType === "multiple_choice_question" ?
+                        question.options
+                    :   [],
             }
-        } else {
-            return question;
-        }
-    });
+        :   question,
+    );
 }
 
 /**
@@ -203,22 +208,19 @@ export function editOption(
     targetOptionIndex: number,
     newOption: string,
 ): Question[] {
-    return questions.map((question) => {
-        if (question.id === targetId) {
-            const newOptions = [...question.options];
-            if (targetOptionIndex === -1) {
-                newOptions.push(newOption);
-            } else if (
-                targetOptionIndex >= 0 &&
-                targetOptionIndex < newOptions.length
-            ) {
-                newOptions[targetOptionIndex] = newOption;
+    return questions.map((question) =>
+        question.id === targetId ?
+            {
+                ...question,
+                options:
+                    targetOptionIndex === -1 ?
+                        [...question.options, newOption]
+                    :   question.options.map((opt, i) =>
+                            i === targetOptionIndex ? newOption : opt,
+                        ),
             }
-            return { ...question, options: newOptions };
-        } else {
-            return question;
-        }
-    });
+        :   question,
+    );
 }
 
 /***
@@ -232,13 +234,11 @@ export function duplicateQuestionInArray(
     targetId: number,
     newId: number,
 ): Question[] {
-    let result: Question[] = [];
-    for (const question of questions) {
-        result.push(question);
+    return questions.reduce<Question[]>((acc, question) => {
+        acc.push(question);
         if (question.id === targetId) {
-            const duplicated = duplicateQuestion(newId, question);
-            result.push(duplicated);
+            acc.push(duplicateQuestion(newId, question));
         }
-    }
-    return result;
+        return acc;
+    }, []);
 }
